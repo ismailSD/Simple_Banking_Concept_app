@@ -14,7 +14,6 @@ type iAccount interface {
 	showStatement()
 	printOutStatement()
 }
-
 type statement struct {
 	date string
 	description string
@@ -97,31 +96,18 @@ func (account *currentAccount) printOutStatement() {
 
 func main() {
 
-	statements := make([]statement, 0, 10)
-	
-	newStatement := statement{"2020", "description", 0.0, 0.0, 0.0}
-	statements = append(statements, newStatement)
-
 	account := currentAccount{
 		"Current",
 		"1234 5678 9101 1213",
 		"87598003",
 		"75-34-09",
 		0.0,
-		statements,
+		make([]statement,0,10),
 		0.0,
 	}
-	fmt.Println(account)
-	fmt.Println("++++++++++++++++++++++++++++++++++++++++++++")
-	account.deposit(100)
-	account.withdraw(73)
-	account.showBalance()
-	account.setWithdrawLimit(100)
-	account.showStatement()
-	account.printOutStatement()
+
 	option := 0
 	displayInstructions()
-
 	for option != 6{
 		fmt.Scan(&option)
 
