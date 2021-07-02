@@ -52,6 +52,10 @@ func (account *currentAccount) deposit(amount float64) {
 	}
 	account.balance += amount
 	fmt.Println("Deposit of (",amount,") success!")
+
+	// create a statement after each deposit
+	account.statements = append(account.statements,
+		statement{"2020", "Deposit", amount, 0.0, account.balance})
 }
 func (account *currentAccount) withdraw(amount float64) {
 	if amount <=0 {
@@ -63,6 +67,10 @@ func (account *currentAccount) withdraw(amount float64) {
 	}
 	account.balance -= amount
 	fmt.Println("Withdraw of (",amount,") success!")
+
+	// create a statement after each withdraw
+	account.statements = append(account.statements,
+		statement{"2020", "Withdraw", amount, 0.0, account.balance})
 }
 func (account *currentAccount) showBalance()  {
 	fmt.Printf("Available balance: %.2f \n",account.balance)
@@ -71,10 +79,15 @@ func (account *currentAccount) setWithdrawLimit(amount float64) {
 	account.withDrawLimit = amount
 }
 func (account *currentAccount) showStatement() {
+	if len(account.statements) <= 0{
+		fmt.Println("There are no statements available.")
+		return
+	}
 	fmt.Println("Date\t\tDescription\t\tDeposit\t\tWithdrawal\t\tBalance")
-	fmt.Println(strings.Repeat("-",130))
+	fmt.Println(strings.Repeat("=",110))
 	for _, s := range account.statements {
-		fmt.Printf("%s \t\t %s \t\t %.2f \t\t %.2f \t\t %.2f",s.date,s.description,s.deposit,s.withdrawal,s.balance)
+		fmt.Printf("%s \t\t %s \t\t %.2f \t\t %.2f \t\t %.2f\n",s.date,s.description,s.deposit,s.withdrawal,s.balance)
+		fmt.Println(strings.Repeat(".",110))
 	}
 	fmt.Print("\n\n")
 }
