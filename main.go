@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/csv"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 )
@@ -69,7 +71,7 @@ func (account *currentAccount) withdraw(amount float64) {
 
 	// create a statement after each withdraw
 	account.statements = append(account.statements,
-		statement{"2020", "Withdraw", amount, 0.0, account.balance})
+		statement{"2020", "Withdraw", 0.0, amount, account.balance})
 }
 func (account *currentAccount) showBalance()  {
 	fmt.Printf("Available balance: %.2f \n",account.balance)
@@ -91,7 +93,30 @@ func (account *currentAccount) showStatement() {
 	fmt.Print("\n\n")
 }
 func (account *currentAccount) printOutStatement() {
-	fmt.Println("statements coming soon....")
+
+	csvFile, err := os.Create("../files/statement.csv")
+	if err != nil { log.Fatalf("Failed creating files: %s", err)}
+	csvWriter := csv.NewWriter(csvFile)
+
+	var rows [][]string
+	rows = append(rows, []string{
+		"Date", "Description", "Deposit", "Withdrawal", "Balance",
+	})
+	for _, s := range account.statements {
+		rows = append(rows, []string{
+			s.date,
+			s.description,
+			fmt.Sprint(s.deposit),
+			fmt.Sprint(s.withdrawal),
+			fmt.Sprint(s.balance),
+		})
+	}
+	for _, row := range rows {
+		_ = csvWriter.Write(row)
+	}
+	csvWriter.Flush()
+	csvFile.Close()
+	fmt.Println("Statement saved to file: ", csvFile.Name())
 }
 
 func main() {
@@ -108,7 +133,7 @@ func main() {
 
 	option := 0
 	displayInstructions()
-	for option != 6{
+	for option != 7{
 		fmt.Scan(&option)
 
 		switch option {
