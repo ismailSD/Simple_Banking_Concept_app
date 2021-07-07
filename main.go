@@ -17,6 +17,7 @@ type iAccount interface {
 	showStatement()
 	printOutStatement()
 }
+
 type statement struct {
 	date string
 	description string
@@ -236,4 +237,5 @@ func displayInstructions(){
 		"6: To print out statement in CVS format\n" +
 		"7: exit program\n" +
 		"Select an action:")
+
 }
