@@ -180,7 +180,10 @@ func (account *currentAccount) printOutStatement() {
 }
 
 func main() {
-	account := currentAccount{
+	// initialized empty map of type iAccount interface
+	account := make(map[string]iAccount)
+
+	account["current"] = &currentAccount{
 		"Current",
 		"1234 5678 9101 1213",
 		"87598003",
@@ -189,14 +192,18 @@ func main() {
 		make([]statement,0,10),
 		withDrawLimit{time.Now().Add(24 * time.Hour), 300, 300},
 	}
+	startApp(account["current"])
+}
 
+func startApp(account iAccount)  {
 	option := 0
 	displayInstructions()
-	for option != 7{
+	for option != 7 {
 		fmt.Scan(&option)
 
 		switch option {
-		case 0:displayInstructions()
+		case 0:
+			displayInstructions()
 			break
 		case 1:
 			account.deposit(inputAmount())
@@ -204,22 +211,26 @@ func main() {
 		case 2:
 			account.withdraw(inputAmount())
 			break
-		case 3: account.showBalance()
+		case 3:
+			account.showBalance()
 			break
-		case 4: account.setWithdrawLimit(inputAmount())
+		case 4:
+			account.setWithdrawLimit(inputAmount())
 			break
-		case 5: account.showStatement()
+		case 5:
+			account.showStatement()
 			break
-		case 6:account.printOutStatement()
+		case 6:
+			account.printOutStatement()
 			break
-		case 7: os.Exit(0)
+		case 7:
+			os.Exit(0)
 		default:
 			fmt.Println("Invalid selection!")
 		}
 	}
-
-
 }
+
 func inputAmount() float64{
 	fmt.Println("Type in the amount:")
 	amount := 0.0
