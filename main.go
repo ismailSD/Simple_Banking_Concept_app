@@ -16,6 +16,7 @@ type iAccount interface {
 	setWithdrawLimit(amount float64)// per day
 	showStatement()
 	printOutStatement()
+	printAccountDetails()
 }
 
 type statement struct {
@@ -51,6 +52,11 @@ type currentAccount struct {
 	balance float64
 	statements []statement
 	withDrawLimit withDrawLimit
+}
+
+func (account *currentAccount) printAccountDetails() {
+	fmt.Printf("Name: %s \nPAN: %s \nAccount Number: %s \nSort Code: %s \n", account.name, account.pAN, account.accountNumber,
+		account.sortCode)
 }
 
 func (account *currentAccount) deposit(amount float64) {
@@ -149,6 +155,7 @@ func (account *currentAccount) showStatement() {
 	}
 	fmt.Print("\n\n")
 }
+
 func (account *currentAccount) printOutStatement() {
 	// 1: create csv files named statement.csv
 	// 2: create statement description header
@@ -192,7 +199,16 @@ func main() {
 		make([]statement,0,10),
 		withDrawLimit{time.Now().Add(24 * time.Hour), 300, 300},
 	}
+	listAccounts(account)
 	startApp(account["current"])
+}
+
+func listAccounts(account map[string]iAccount)  {
+	for key, element := range account{
+		fmt.Println("==============",key,"==============")
+		element.printAccountDetails()
+		fmt.Println("............................................")
+	}
 }
 
 func startApp(account iAccount)  {
@@ -202,31 +218,30 @@ func startApp(account iAccount)  {
 		fmt.Scan(&option)
 
 		switch option {
-		case 0:
-			displayInstructions()
+		case 0: displayInstructions()
 			break
-		case 1:
-			account.deposit(inputAmount())
+
+		case 1: account.deposit(inputAmount())
 			break
-		case 2:
-			account.withdraw(inputAmount())
+
+		case 2: account.withdraw(inputAmount())
 			break
-		case 3:
-			account.showBalance()
+
+		case 3: account.showBalance()
 			break
-		case 4:
-			account.setWithdrawLimit(inputAmount())
+
+		case 4: account.setWithdrawLimit(inputAmount())
 			break
-		case 5:
-			account.showStatement()
+
+		case 5: account.showStatement()
 			break
-		case 6:
-			account.printOutStatement()
+
+		case 6: account.printOutStatement()
 			break
-		case 7:
-			os.Exit(0)
-		default:
-			fmt.Println("Invalid selection!")
+
+		case 7: os.Exit(0)
+
+		default: fmt.Println("Invalid selection!")
 		}
 	}
 }
@@ -248,5 +263,4 @@ func displayInstructions(){
 		"6: To print out statement in CVS format\n" +
 		"7: exit program\n" +
 		"Select an action:")
-
 }
