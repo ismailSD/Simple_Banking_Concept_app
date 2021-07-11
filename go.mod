@@ -1,3 +1,3 @@
-module github.com/simpleGoProgram
+module simpleGoProgram
 
 go 1.16

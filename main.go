@@ -1,351 +1,50 @@
 package main
 
 import (
-	"encoding/csv"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"time"
+
+	"simpleGoProgram/accounts"
 )
 
-type iAccount interface {
-	deposit(amount float64)
-	withdraw(amount float64)
-	showBalance()
-	setWithdrawLimit(amount float64)// per day
-	showStatement()
-	printOutStatement()
-	printAccountDetails()
-}
-
-type statement struct {
-	date string
-	description string
-	deposit float64
-	withdrawal float64
-	balance float64
-}
-type withDrawLimit struct {
-	lastWithDrawDate time.Time
-	lastLimitSet float64
-	amount float64// by default set to -1.0 means there is no limit per day
-}
-
-type savingsAccount struct {
-	name string// account type e.g., debit
-	pAN string//16 digit Permanent Account Number
-	accountNumber string// 8 digit account number
-	sortCode string// 6 digit sort code
-
-	balance float64
-	statements []statement
-	withDrawLimit withDrawLimit
-}
-
-type currentAccount struct {
-	name string// account type e.g., debit
-	pAN string//16 digit Permanent Account Number
-	accountNumber string// 8 digit account number
-	sortCode string// 6 digit sort code
-
-	balance float64
-	statements []statement
-	withDrawLimit withDrawLimit
-}
-
-//============= CURRENT ACCOUNT FUNCTIONALITIES =========================
-func (account *currentAccount) printAccountDetails() {
-	fmt.Printf("Name: %s \nPAN: %s \nAccount Number: %s \nSort Code: %s \n", account.name, account.pAN, account.accountNumber,
-		account.sortCode)
-}
-
-func (account *currentAccount) deposit(amount float64) {
-	// 1: ensure that amount is not less than zero or greater than one million
-	// 2: add the amount to existing balance
-	// 3: create a statement that includes the current date and time
-	// 4: ensure that amount is not less than zero or greater than one million
-
-	if amount <=0 || amount > 1000000 {
-		fmt.Println("Amount must be greater 0 and less than or equal to 1,000,000")
-		return
-	}
-
-	account.balance += amount
-	fmt.Println("Deposit of (",amount,") success!")
-
-	// create a statement after each deposit
-	account.statements = append(account.statements, statement{time.Now().Format("2006-01-02 3:4:5 PM"),
-			"Deposit", amount, 0.0, account.balance})
-}
-
-func (account *currentAccount) withdraw(amount float64) {
-	// 1: ensure that there is sufficient funds
-	// 2: ensure that amount is not less than zero or greater than one million
-	// 3: ensure that amount is not greater than the account balance
-	// 4: check if 24 hours has past since last with draw limit set if so renew it
-	// 5: check if withdraw limit has reached
-	// 6: ensure that amount is not greater than withdraw limit amount
-	// 7: subtract amount from account balance
-	// 8: Create a statement that includes the current date and time
-
-	if account.balance <=0 {
-		fmt.Println("Insufficient funds!")
-
-	} else if amount <=0 || amount > 1000000{
-		fmt.Println("Amount must be greater 0 and less than or equal to 1,000,000")
-
-	} else if amount > account.balance {
-		fmt.Println("Cannot withdraw more than available balance of (",account.balance,")!")
-
-	} else if account.withDrawLimit.lastWithDrawDate.Before(time.Now()) {
-		// 24 hours has past reset the withdraw limit per day
-		// rest the withdraw amount per day
-		account.withDrawLimit.lastWithDrawDate = time.Now().Add(24 * time.Hour)
-		account.withDrawLimit.amount = account.withDrawLimit.lastLimitSet
-
-	} else if account.withDrawLimit.amount <= 0{
-		fmt.Println("You have reached the withdraw limit for today!")
-
-	} else if amount > account.withDrawLimit.amount{
-		fmt.Println("You are trying to withdraw over the limit per day!")
-		fmt.Println("You can with draw ", account.withDrawLimit.amount, " or less.")
-
-	}else {
-		account.balance -= amount
-		account.withDrawLimit.amount -= amount
-		fmt.Println("Withdraw of (",amount,") success!")
-
-		// create a statement after each withdraw
-		account.statements = append(account.statements,
-			statement{time.Now().Format("2006-01-02 3:4:5 PM"), "Withdraw",
-				0.0, amount, account.balance})
-	}
-}
-
-func (account *currentAccount) showBalance()  {
-	fmt.Printf("Available balance: %.2f \n",account.balance)
-}
-
-func (account *currentAccount) setWithdrawLimit(amount float64) {
-	// 1: ensure that the limit amount is not less than 1 or greater one thousand
-	// 2: assign account limit to the new amount
-
-	if amount < 1 || amount > 1000{
-		fmt.Println("Limit must be between 1 and 1,000")
-
-	}else {
-		account.withDrawLimit.amount = amount
-		account.withDrawLimit.lastWithDrawDate = time.Now().Add(24 * time.Hour)
-		fmt.Println("Withdraw limit set to", account.withDrawLimit.amount, "per day.")
-	}
-
-}
-
-func (account *currentAccount) showStatement() {
-	// iterate through account statements and display them
-	if len(account.statements) <= 0{
-		fmt.Println("There are no statements available.")
-		return
-	}
-	fmt.Println("Date\t\tDescription\t\tDeposit\t\tWithdrawal\t\tBalance")
-	fmt.Println(strings.Repeat("=",110))
-	for _, s := range account.statements {
-		fmt.Printf("%s \t\t %s \t\t %.2f \t\t %.2f \t\t %.2f\n", s.date,s.description,s.deposit,s.withdrawal,s.balance)
-		fmt.Println(strings.Repeat(".",110))
-	}
-	fmt.Print("\n\n")
-}
-func (account *currentAccount) printOutStatement() {
-	// 1: create csv files named statement.csv
-	// 2: create statement description header
-	// 3: iterate through account statements and assign to 2D array
-	// 4: iterate through 2D array and write each row data to the cvs file
-
-	csvFile, err := os.Create("../files/statement.csv")
-	if err != nil { log.Fatalf("Failed creating files: %s", err)}
-	csvWriter := csv.NewWriter(csvFile)
-
-	rows := make([][]string, 0,10)
-	rows = append(rows, []string{ "Date", "Description", "Deposit", "Withdrawal", "Balance"})
-
-	for _, s := range account.statements {
-		rows = append(rows, []string{
-			s.date,
-			s.description,
-			fmt.Sprint(s.deposit),
-			fmt.Sprint(s.withdrawal),
-			fmt.Sprint(s.balance),
-		})
-	}
-	for _, row := range rows {
-		_ = csvWriter.Write(row)
-	}
-	csvWriter.Flush()
-	csvFile.Close()
-	fmt.Println("Statement saved to file: ", csvFile.Name())
-}
-//============= SAVINGS ACCOUNT FUNCTIONALITIES =========================
-func (account *savingsAccount) printAccountDetails() {
-	fmt.Printf("Name: %s \nPAN: %s \nAccount Number: %s \nSort Code: %s \n", account.name, account.pAN, account.accountNumber,
-		account.sortCode)
-}
-
-func (account *savingsAccount) deposit(amount float64) {
-	// 1: ensure that amount is not less than zero or greater than one million
-	// 2: add the amount to existing balance
-	// 3: create a statement that includes the current date and time
-	// 4: ensure that amount is not less than zero or greater than one million
-
-	if amount <=0 || amount > 1000000 {
-		fmt.Println("Amount must be greater 0 and less than or equal to 1,000,000")
-		return
-	}
-
-	account.balance += amount
-	fmt.Println("Deposit of (",amount,") success!")
-
-	// create a statement after each deposit
-	account.statements = append(account.statements, statement{time.Now().Format("2006-01-02 3:4:5 PM"),
-		"Deposit", amount, 0.0, account.balance})
-}
-
-func (account *savingsAccount) withdraw(amount float64) {
-	// 1: ensure that there is sufficient funds
-	// 2: ensure that amount is not less than zero or greater than one million
-	// 3: ensure that amount is not greater than the account balance
-	// 4: check if 24 hours has past since last with draw limit set if so renew it
-	// 5: check if withdraw limit has reached
-	// 6: ensure that amount is not greater than withdraw limit amount
-	// 7: subtract amount from account balance
-	// 8: Create a statement that includes the current date and time
-
-	if account.balance <=0 {
-		fmt.Println("Insufficient funds!")
-
-	} else if amount <=0 || amount > 1000000{
-		fmt.Println("Amount must be greater 0 and less than or equal to 1,000,000")
-
-	} else if amount > account.balance {
-		fmt.Println("Cannot withdraw more than available balance of (",account.balance,")!")
-
-	} else if account.withDrawLimit.lastWithDrawDate.Before(time.Now()) {
-		// 24 hours has past reset the withdraw limit per day
-		// rest the withdraw amount per day
-		account.withDrawLimit.lastWithDrawDate = time.Now().Add(24 * time.Hour)
-		account.withDrawLimit.amount = account.withDrawLimit.lastLimitSet
-
-	} else if account.withDrawLimit.amount <= 0{
-		fmt.Println("You have reached the withdraw limit for today!")
-
-	} else if amount > account.withDrawLimit.amount{
-		fmt.Println("You are trying to withdraw over the limit per day!")
-		fmt.Println("You can with draw ", account.withDrawLimit.amount, " or less.")
-
-	}else {
-		account.balance -= amount
-		account.withDrawLimit.amount -= amount
-		fmt.Println("Withdraw of (",amount,") success!")
-
-		// create a statement after each withdraw
-		account.statements = append(account.statements,
-			statement{time.Now().Format("2006-01-02 3:4:5 PM"), "Withdraw",
-				0.0, amount, account.balance})
-	}
-}
-
-func (account *savingsAccount) showBalance()  {
-	fmt.Printf("Available balance: %.2f \n",account.balance)
-}
-
-func (account *savingsAccount) setWithdrawLimit(amount float64) {
-	// 1: ensure that the limit amount is not less than 1 or greater one thousand
-	// 2: assign account limit to the new amount
-
-	if amount < 1 || amount > 1000{
-		fmt.Println("Limit must be between 1 and 1,000")
-
-	}else {
-		account.withDrawLimit.amount = amount
-		account.withDrawLimit.lastWithDrawDate = time.Now().Add(24 * time.Hour)
-		fmt.Println("Withdraw limit set to", account.withDrawLimit.amount, "per day.")
-	}
-
-}
-
-func (account *savingsAccount) showStatement() {
-	// iterate through account statements and display them
-	if len(account.statements) <= 0{
-		fmt.Println("There are no statements available.")
-		return
-	}
-	fmt.Println("Date\t\tDescription\t\tDeposit\t\tWithdrawal\t\tBalance")
-	fmt.Println(strings.Repeat("=",110))
-	for _, s := range account.statements {
-		fmt.Printf("%s \t\t %s \t\t %.2f \t\t %.2f \t\t %.2f\n", s.date,s.description,s.deposit,s.withdrawal,s.balance)
-		fmt.Println(strings.Repeat(".",110))
-	}
-	fmt.Print("\n\n")
-}
-func (account *savingsAccount) printOutStatement() {
-	// 1: create csv files named statement.csv
-	// 2: create statement description header
-	// 3: iterate through account statements and assign to 2D array
-	// 4: iterate through 2D array and write each row data to the cvs file
-
-	csvFile, err := os.Create("../files/statement.csv")
-	if err != nil { log.Fatalf("Failed creating files: %s", err)}
-	csvWriter := csv.NewWriter(csvFile)
-
-	rows := make([][]string, 0,10)
-	rows = append(rows, []string{ "Date", "Description", "Deposit", "Withdrawal", "Balance"})
-
-	for _, s := range account.statements {
-		rows = append(rows, []string{
-			s.date,
-			s.description,
-			fmt.Sprint(s.deposit),
-			fmt.Sprint(s.withdrawal),
-			fmt.Sprint(s.balance),
-		})
-	}
-	for _, row := range rows {
-		_ = csvWriter.Write(row)
-	}
-	csvWriter.Flush()
-	csvFile.Close()
-	fmt.Println("Statement saved to file: ", csvFile.Name())
-}
-
 func main() {
+
+	defaultWithdrawLimit := accounts.WithDrawLimit{
+		LastWithDrawDate: time.Now().Add(24 * time.Hour),
+		LastLimitSet: 300,
+		Amount: 300,
+	}
+
+	currentAccount := accounts.CurrentAccount{
+		Name:          "Current",
+		PAN:           "1234 5678 9101 1213",
+		AccountNumber: "87598003",
+		SortCode:      "75-34-09",
+		Balance: 0.0,
+		Statements:    make([]accounts.Statement,0,10), WithDrawLimit: defaultWithdrawLimit,
+	}
+
+	savingsAccount := accounts.SavingsAccount{
+		Name:          "Current",
+		PAN:           "1234 5678 9101 1213",
+		AccountNumber: "87598003",
+		SortCode:      "75-34-09",
+		Balance: 0.0,
+		Statements:    make([]accounts.Statement,0,10), WithDrawLimit: defaultWithdrawLimit,
+	}
+
 	// initialized empty map of type iAccount interface
-	accounts := make(map[string]iAccount)
-
-	accounts["current"] = &currentAccount{
-		"Current",
-		"1234 5678 9101 1213",
-		"87598003",
-		"75-34-09",
-		0.0,
-		make([]statement,0,10),
-		withDrawLimit{time.Now().Add(24 * time.Hour), 300, 300},
-	}
-
-	accounts["savings"] = &savingsAccount{
-		"savings",
-		"9583 7621 9101 8383",
-		"98573746",
-		"95-44-11",
-		0.0,
-		make([]statement,0,10),
-		withDrawLimit{time.Now().Add(24 * time.Hour), 300, 300},
-	}
+	accountCards := make(map[string]accounts.IAccount)
+	accountCards["current"] = &currentAccount
+	accountCards["savings"] = &savingsAccount
 
 	options := func() string {
-		return "::::Choose an account to proceed or show accounts::::\nEnter\n" +
+		return "::::Choose an account to proceed or show accountCards::::\nEnter\n" +
 			"0: current account\n" +
 			"1: savings account\n" +
-			"2: show accounts\n" +
+			"2: show accountCards\n" +
 			"3: Exit program\n"
 	}
 
@@ -356,17 +55,17 @@ func main() {
 		fmt.Scan(&cardSelected)
 
 		switch cardSelected {
-		case 0: val := startApp(accounts["current"])
+		case 0: val := startApp(accountCards["current"])
 			if strings.Compare(val, "restart") == 0 {
 				goto restart
 			}
 			break
-		case 1: val := startApp(accounts["savings"])
+		case 1: val := startApp(accountCards["savings"])
 			if strings.Compare(val, "restart") == 0 {
 				goto restart
 			}
 			break
-		case 2:listAccounts(accounts)
+		case 2:listAccounts(accountCards)
 			break
 		case 3: os.Exit(0)
 
@@ -377,15 +76,15 @@ func main() {
 
 }
 
-func listAccounts(account map[string]iAccount)  {
+func listAccounts(account map[string]accounts.IAccount)  {
 	for key, element := range account{
 		fmt.Println("==============",key,"==============")
-		element.printAccountDetails()
+		element.PrintAccountDetails()
 		fmt.Println("............................................")
 	}
 }
 
-func startApp(account iAccount) string{
+func startApp(account accounts.IAccount) string{
 	option := 0
 	displayInstructions()
 	for option != 8 {
@@ -395,22 +94,22 @@ func startApp(account iAccount) string{
 		case 0: displayInstructions()
 			break
 
-		case 1: account.deposit(inputAmount())
+		case 1: account.Deposit(inputAmount())
 			break
 
-		case 2: account.withdraw(inputAmount())
+		case 2: account.Withdraw(inputAmount())
 			break
 
-		case 3: account.showBalance()
+		case 3: account.ShowBalance()
 			break
 
-		case 4: account.setWithdrawLimit(inputAmount())
+		case 4: account.SetWithdrawLimit(inputAmount())
 			break
 
-		case 5: account.showStatement()
+		case 5: account.ShowStatement()
 			break
 
-		case 6: account.printOutStatement()
+		case 6: account.PrintOutStatement()
 			break
 
 		case 7: return "restart"
