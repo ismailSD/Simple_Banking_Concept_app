@@ -345,7 +345,8 @@ func main() {
 		return "::::Choose an account to proceed or show accounts::::\nEnter\n" +
 			"0: current account\n" +
 			"1: savings account\n" +
-			"2: show accounts\n"
+			"2: show accounts\n" +
+			"3: Exit program\n"
 	}
 
 	cardSelected := -1
@@ -367,6 +368,8 @@ func main() {
 			break
 		case 2:listAccounts(accounts)
 			break
+		case 3: os.Exit(0)
+
 		default:
 			fmt.Println("Invalid option!")
 		}
